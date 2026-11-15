@@ -1,14 +1,23 @@
-from sqlalchemy.ext.asyncio import AsyncSession
+from decimal import Decimal
+
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from .models import Product
+
+
 class ProductRepository:
-    def __init__(self,session:AsyncSession):
+    """产品数据访问层，负责查询在售产品及其筛选结果。"""
+
+    def __init__(self, session: AsyncSession):
         self.session = session
 
-    async def query_by_category(self, category: str | None=None)->list[Product]:
-        #动态条件，产品必须是上架的产品
-        conditions= [Product.status == 'active']
-        #如果category不为空，追加相应的查询条件
+    async def query_by_category(self, category: str | None = None) -> list[Product]:
+        """按分类查询已上架的产品；category 为空时查询全部在售产品。"""
+        # 仅返回状态为 active 的产品，确保只查询已上架数据。
+        conditions = [Product.status == "active"]
+
+        # 如果提供分类参数，则进一步过滤对应类别的产品。
         if category:
             conditions.append(Product.category == category)
 
@@ -20,3 +29,32 @@ class ProductRepository:
 
         result = await self.session.scalars(select(Product).where(*conditions))
         return result.all()
+
+    async def find_limited_by_category(
+        self,
+        category: str,
+        premium_min: Decimal | None,
+        limit: int,
+    ) -> list[Product]:
+        """按分类查询满足保费阈值的产品，并按保费和 ID 排序后截取结果。"""
+        # 先固定筛选条件：必须是已上架且属于指定分类的产品。
+        conditions = [
+            Product.status == "active",
+            Product.category == category,
+        ]
+
+        # 若传入最小保费门槛，则只保留保费低于门槛的产品。
+        if premium_min is not None:
+            conditions.append(Product.min_premium < premium_min)
+
+        # 按保费从低到高排序，保费为空的记录排到最后，然后按 ID 稳定排序。
+        products = await self.session.scalars(
+            select(Product)
+            .where(*conditions)
+            .order_by(
+                Product.min_premium.asc().nullslast(),
+                Product.id.asc(),
+            )
+            .limit(limit)
+        )
+        return products.all()

@@ -32,8 +32,9 @@ app = FastAPI(
 )
 
 from app.modules.product.router import router as product_router
+from app.modules.chat_thread.router import router as chat_router
 app.include_router(product_router)
-
+app.include_router(chat_router)
 
 # 健康检查测试接口‘
 @app.get("/healthy",summary="健康检查接口")
