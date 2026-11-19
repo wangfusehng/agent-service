@@ -1,3 +1,4 @@
+from fastapi.sse import ServerSentEvent
 from langchain_core.messages import HumanMessage
 from langgraph.graph.state import CompiledStateGraph
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,10 +26,13 @@ class ChatService:
         user_input = {"messages":[HumanMessage(request.message)]}
         # thread_id 用于标识会话，使 LangGraph 复用对应的对话历史
         config = {"configurable":{"thread_id":request.thread_id}}
-        # 异步调用 agent，执行节点并返回完整的状态消息
-        response = await self.agent.ainvoke(
+        # 异步调用 agent，
+        stream_response = await self.agent.astream_events(
             input = user_input,
             config = config,
+            version="v3"
         )
-        # 返回状态中最后一条消息的文本内容，即 agent 的最终回复
-        return response["messages"][-1].content
+        async for message in stream_response.messages:
+            async for chunk in message.text:
+                yield ServerSentEvent(data=chunk,event="message")
+        yield ServerSentEvent(data="END",event="done")
