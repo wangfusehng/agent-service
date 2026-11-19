@@ -23,27 +23,37 @@ class AppSettings(EnvSettings):
 
 class DatabaseSettings(EnvSettings):
     """数据库相关设置"""
+
     host: str = Field(alias="DB_HOST", default="localhost")
     port: int = Field(alias="DB_PORT", default=5432)
     name: str = Field(alias="DB_NAME", default="insurance")
     user: str = Field(alias="DB_USER", default="insurance")
     password: str = Field(alias="DB_PASSWORD", default="insurance123")
-    #数据库连接池配置
     echo: bool = Field(alias="DB_ECHO", default=False)
     pool_size: int = Field(alias="DB_POOL_SIZE", default=5)
     max_overflow: int = Field(alias="DB_MAX_OVERFLOW", default=10)
+    pool_timeout: int = Field(alias="DB_POOL_TIMEOUT", default=30)
     pool_recycle: int = Field(alias="DB_POOL_RECYCLE", default=1800)
-    @computed_field
-    @property
-    def url(self) -> str:
-        # 自动拼接URL路径
+
+    def build_url(self, scheme: str) -> str:
         return PostgresDsn.build(
-            scheme="postgresql+asyncpg",
+            scheme=scheme,
             host=self.host,
             port=self.port,
             username=self.user,
-            password=self.password
+            password=self.password,
+            path=self.name,
         ).encoded_string()
+
+    @computed_field
+    @property
+    def url(self) -> str:
+        return self.build_url("postgresql+asyncpg")
+
+    @computed_field
+    @property
+    def checkpoint_url(self) -> str:
+        return self.build_url("postgresql")
 
 class LLMSettings(EnvSettings):
     """模型相关配置"""

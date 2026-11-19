@@ -30,31 +30,25 @@ class ProductRepository:
         result = await self.session.scalars(select(Product).where(*conditions))
         return result.all()
 
-    async def find_limited_by_category(
+    async def find_candidates(
         self,
-        category: str,
+        categories: str,
         premium_min: Decimal | None,
-        limit: int,
+        limit_per_category: int,
     ) -> list[Product]:
-        """按分类查询满足保费阈值的产品，并按保费和 ID 排序后截取结果。"""
-        # 先固定筛选条件：必须是已上架且属于指定分类的产品。
-        conditions = [
-            Product.status == "active",
-            Product.category == category,
-        ]
-
-        # 若传入最小保费门槛，则只保留保费低于门槛的产品。
-        if premium_min is not None:
-            conditions.append(Product.min_premium < premium_min)
-
-        # 按保费从低到高排序，保费为空的记录排到最后，然后按 ID 稳定排序。
+        candidate_products:list[Product] = []
+        for category in categories:
+            conditions = [
+                Product.category == category,
+                Product.status == "active",
+            ]
+            if premium_min:
+                conditions.append(Product.min_premium <= premium_min)
         products = await self.session.scalars(
             select(Product)
             .where(*conditions)
-            .order_by(
-                Product.min_premium.asc().nullslast(),
-                Product.id.asc(),
-            )
-            .limit(limit)
+            .order_by(Product.min_premium.asc().nullslast(),Product.id.asc())
+            .limit(limit_per_category)
         )
-        return products.all()
+        candidate_products.extend(products.all())
+        return candidate_products

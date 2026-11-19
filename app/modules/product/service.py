@@ -24,16 +24,8 @@ class ProductService:
         limit_per_category: int,
     ) -> list[Product]:
         """按分类循环查询候选产品，并去重后汇总结果。"""
-        candidate_products: list[Product] = []
-
-        # dict.fromkeys 可去除重复分类，确保同一分类只查询一次。
-        for category in dict.fromkeys(categories):
-            # 每个分类都查询一个按保费排序的有限候选列表。
-            products = await self.repository.find_limited_by_category(
-                category=category,
-                premium_min=premium_min,
-                limit=limit_per_category,
-            )
-            candidate_products.extend(products)
-
-        return candidate_products
+        return await self.repository.find_candidates(
+            categories=categories,
+            premium_min=premium_min,
+            limit_per_category=limit_per_category
+        )

@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.modules import chat_thread
 from app.modules.chat_thread.models import ChatThread
 
 
@@ -13,10 +14,10 @@ class ChatThreadRepository:
     async def add(self, chat_thread: ChatThread):
         self.session.add(chat_thread)
 
-    async def update(self, chat_thread: ChatThread):
-        pass
     async def delete(self, chat_thread: ChatThread):
-        pass
+        await self.session.delete(chat_thread)
+
+
 
     async def list_by_user(self,user_id:int)->list[ChatThread]:
         threads = await self.session.scalars(
@@ -24,3 +25,11 @@ class ChatThreadRepository:
             .order_by(ChatThread.updated_at.desc(),ChatThread.created_at.desc())
         )
         return threads.all()
+
+    async def required_owner(self,user_id:int,id:str)->ChatThread:
+        """校验会话是否属于当前用户"""
+        chat_thread = await self.session.scalar(
+            select(ChatThread)
+            .where(ChatThread.id == id,ChatThread.user_id == user_id)
+        )
+        return chat_thread
