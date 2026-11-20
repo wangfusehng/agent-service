@@ -4,6 +4,9 @@ from uuid import UUID
 from pydantic import Field, field_validator
 
 from app.common.schemas import BaseSchema
+from typing import Any, Literal
+
+from pydantic import BaseModel
 
 
 class ChatThreadCreate(BaseSchema):
@@ -20,3 +23,19 @@ class ChatThreadResponse(BaseSchema):
     title:str
     created_at:datetime
     updated_at:datetime
+
+
+
+
+class ChatMessageResponse(BaseModel):
+    """历史消息"""
+
+    role: Literal["user", "assistant"]
+    content: str
+
+
+class ChatHistoryResponse(BaseModel):
+    """会话历史响应"""
+
+    thread_id: UUID
+    messages: list[ChatMessageResponse]
