@@ -22,6 +22,7 @@ def init_insurance_agent(checkpointer: AsyncPostgresSaver):
         model=settings.llm.chat_model,
         model_provider="deepseek",
         api_key=settings.llm.api_key,
+        base_url=settings.llm.base_url,
         extra_body={"thinking": {"type": "disabled"}},
     )
 

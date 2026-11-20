@@ -59,7 +59,7 @@ class LLMSettings(EnvSettings):
     """模型相关配置"""
     api_key: str = Field(alias="DEEPSEEK_API_KEY")
     chat_model: str = Field(alias="CHAT_MODEL", default="deepseek-v4-flash")
-
+    base_url:str = Field(alias="BASE_URL")
 class LoggingSettings(EnvSettings):
     """日志相关配置"""
     level: str = Field(alias="LOGGING_LEVEL", default="INFO") # 可选值：DEBUG、INFO、WARNING、ERROR、CRITICAL
