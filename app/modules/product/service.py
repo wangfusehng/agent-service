@@ -18,14 +18,19 @@ class ProductService:
         return await self.repository.query_by_category(category)
 
     async def list_candidates(
-        self,
-        categories: list[str],
-        premium_min: Decimal | None,
-        limit_per_category: int,
+            self,
+            categories: list[str],
+            premium_min: Decimal | None,
+            limit_per_category: int,
     ) -> list[Product]:
-        """按分类循环查询候选产品，并去重后汇总结果。"""
-        return await self.repository.find_candidates(
-            categories=categories,
-            premium_min=premium_min,
-            limit_per_category=limit_per_category
-        )
+        candidate_products: list[Product] = []
+
+        for category in dict.fromkeys(categories):
+            products = await self.repository.find_limited_by_category(
+                category=category,
+                premium_min=premium_min,
+                limit=limit_per_category,
+            )
+            candidate_products.extend(products)
+
+        return candidate_products

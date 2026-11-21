@@ -22,6 +22,7 @@ async def list_products(category:str|None=None,
     products = await service.list_products(category)#fastapi会自动把Product类型返回值转换为ProductResponse类型
     return products
 
+
 @router.get("/candidates", response_model=list[ProductResponse])
 async def list_candidates(
     categories: list[str] = Query(min_length=1),

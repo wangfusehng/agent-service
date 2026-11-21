@@ -30,25 +30,26 @@ class ProductRepository:
         result = await self.session.scalars(select(Product).where(*conditions))
         return result.all()
 
-    async def find_candidates(
-        self,
-        categories: str,
-        premium_min: Decimal | None,
-        limit_per_category: int,
+    async def find_limited_by_category(
+            self,
+            category: str,
+            premium_min: Decimal | None,
+            limit: int,
     ) -> list[Product]:
-        candidate_products:list[Product] = []
-        for category in categories:
-            conditions = [
-                Product.category == category,
-                Product.status == "active",
-            ]
-            if premium_min:
-                conditions.append(Product.min_premium <= premium_min)
+        conditions = [
+            Product.status == "active",
+            Product.category == category,
+        ]
+        if premium_min is not None:
+            conditions.append(Product.min_premium < premium_min)
+
         products = await self.session.scalars(
             select(Product)
             .where(*conditions)
-            .order_by(Product.min_premium.asc().nullslast(),Product.id.asc())
-            .limit(limit_per_category)
+            .order_by(
+                Product.min_premium.asc().nullslast(),
+                Product.id.asc(),
+            )
+            .limit(limit)
         )
-        candidate_products.extend(products.all())
-        return candidate_products
+        return products.all()
